@@ -33,6 +33,8 @@ def read_config():
                 global_state.config_histories.append(h)
 
 def to_json():
+    if not global_state.config_histories:
+        return ""
     data = list()
     for h in global_state.config_histories:
         data.append(h.to_json())
@@ -73,7 +75,6 @@ def on_ui_tabs():
                 itemIdText = gr.Text(elem_id="prompt_history_item_id_text", visible=False)
                 clickItemBtn = gr.Button(elem_id="prompt_history_click_item_btn", visible=False)
                 deleteItemBtn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
-                
             with gr.Column(scale=1): # image preview and details column
                 with gr.Row():
                     # image preview
@@ -83,7 +84,7 @@ def on_ui_tabs():
                         interactive=False,
                     )
                 with gr.Row():
-                    applyBtn = gr.Button(label="Apply")
+                    applyBtn = gr.Button("Apply")
                 with gr.Row():
                     codeBlock = gr.Code(
                         label="Code",
@@ -94,7 +95,7 @@ def on_ui_tabs():
             paste_button=applyBtn, tabname="txt2img", source_text_component=codeBlock, source_image_component=None,
         ))
         clickItemBtn.click(
-            fn=modules.ui.wrap_gradio_call(onClickOnItem, extra_outputs=[gr.update(), gr.update()]),
+            fn=onClickOnItem,
             inputs=[itemIdText],
             outputs=[previewImage, codeBlock],
             show_progress=False,
@@ -102,7 +103,6 @@ def on_ui_tabs():
         deleteItemBtn.click(
             fn=onDeleteItem,
             inputs=[itemIdText],
-            outputs=[],
             show_progress=False,
         )
         return [(ui, "Prompt History", "extension_prompt_history_tab")]
@@ -115,6 +115,7 @@ def onDeleteItem(id: str):
                 os.remove(img_path)
             global_state.config_histories.remove(h)
     save_history()
+    global_state.config_changed = True
     return []
 
 def onClickOnItem(id: str):
@@ -143,9 +144,9 @@ def history_table():
         for h in global_state.config_histories:
             onclickViewItem =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
             onclickDeleteItem =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
-            code += f"""<tr style="cursor: pointer;" onclick={onclickViewItem}>
-                        <td style="width: 90%;">{h.name} - {h.model}</td>
-                        <td>{time.ctime(h.created_at)}</td>
+            code += f"""<tr>
+                        <td style="cursor: pointer;" onclick={onclickViewItem} style="width: 90%;">{h.name} - {h.model}</td>
+                        <td style="cursor: pointer;" onclick={onclickViewItem}>{time.ctime(h.created_at)}</td>
                         <td style="width: 110px;"><a onclick={onclickDeleteItem} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
                     </tr>"""
 
