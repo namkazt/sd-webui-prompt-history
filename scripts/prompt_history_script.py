@@ -14,10 +14,13 @@ import gradio as gr
 import json
 import os
 import modules
-from modules import script_callbacks, shared, scripts
+from modules import script_callbacks, shared, scripts, ui_components
 
 config_dir = os.path.join(scripts.basedir(), "data")
 config_file_path = "data.json"
+current_code = ""
+origin_code = "'"
+active_id = ""
 
 def read_config():
     # ensure history exist
@@ -72,37 +75,102 @@ def on_ui_tabs():
                 table = gr.HTML('Loading...')
                 ui.load(fn=history_table, inputs=[], outputs=[table], every=1)
                 # receiver buttons
-                itemIdText = gr.Text(elem_id="prompt_history_item_id_text", visible=False)
-                clickItemBtn = gr.Button(elem_id="prompt_history_click_item_btn", visible=False)
-                deleteItemBtn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
+                item_id_text = gr.Text(elem_id="prompt_history_item_id_text", visible=False)
+                click_item_btn = gr.Button(elem_id="prompt_history_click_item_btn", visible=False)
+                delete_item_btn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
             with gr.Column(scale=1): # image preview and details column
                 with gr.Row():
                     # image preview
-                    previewImage = gr.Image(
+                    preview_image = gr.Image(
                         label="Preview",
                         show_label=True,
                         interactive=False,
                     )
                 with gr.Row():
-                    applyBtn = gr.Button("Apply")
+                    apply_btn = gr.Button("Apply")
                 with gr.Row():
-                    codeBlock = gr.Code(
+                    edit_btn =  gr.Button("🖊️", visible=False, elem_classes=["tool_fixed"])
+                    revert_btn =  gr.Button("❌", visible=False, elem_classes=["tool_fixed"])
+                    save_btn = gr.Button("💾", visible=False, elem_classes=["tool_fixed"])
+                with gr.Row():
+                    code_block = gr.Code(
                         label="Code",
                         show_label=True,
+                        interactive=False,
                     )
-       
+                    
+        # process when click edit button
+        edit_btn.click(
+            fn=lambda: {
+                code_block: gr.update(interactive=True),
+                revert_btn: gr.update(visible=True),
+                save_btn: gr.update(visible=True),
+                edit_btn: gr.update(visible=False),
+            },
+            outputs=[code_block, revert_btn, save_btn, edit_btn]
+        )
+        
+        # revert code func
+        def revert_func():
+            global current_code
+            current_code = origin_code
+            return {
+                code_block: gr.update(value=origin_code, interactive=False),
+                revert_btn: gr.update(visible=False),
+                save_btn: gr.update(visible=False),
+                edit_btn: gr.update(visible=True),
+            }
+        revert_btn.click(
+            fn=revert_func,
+            outputs=[code_block, revert_btn, save_btn, edit_btn]
+        )
+        
+        # save code func
+        def code_change_func(text: str):
+            global current_code
+            current_code = text
+        code_block.change(
+            fn=code_change_func,
+            inputs=[code_block],
+            outputs=[]
+        )
+        def apply_func():
+            # edit info code in history object and save to file
+            global active_id, current_code
+            for h in global_state.config_histories:
+                if h.id == active_id:
+                    h.info_text = current_code
+                    save_history()
+                    break
+            # update state
+            return {
+                code_block: gr.update(interactive=False),
+                revert_btn: gr.update(visible=False),
+                save_btn: gr.update(visible=False),
+                edit_btn: gr.update(visible=True),
+            }
+        save_btn.click(
+            fn=apply_func,
+            outputs=[code_block, revert_btn, save_btn, edit_btn]
+        )
+        
+        # register paste for apply button
         parameters_copypaste.register_paste_params_button(parameters_copypaste.ParamBinding(
-            paste_button=applyBtn, tabname="txt2img", source_text_component=codeBlock, source_image_component=None,
+            paste_button=apply_btn, tabname="txt2img", source_text_component=code_block, source_image_component=None,
         ))
-        clickItemBtn.click(
+        
+        # process when click to item
+        click_item_btn.click(
             fn=onClickOnItem,
-            inputs=[itemIdText],
-            outputs=[previewImage, codeBlock],
+            inputs=[item_id_text],
+            outputs=[preview_image, code_block, edit_btn],
             show_progress=False,
         )
-        deleteItemBtn.click(
+        
+        # process when delete button
+        delete_item_btn.click(
             fn=onDeleteItem,
-            inputs=[itemIdText],
+            inputs=[item_id_text],
             show_progress=False,
         )
         return [(ui, "Prompt History", "extension_prompt_history_tab")]
@@ -119,12 +187,16 @@ def onDeleteItem(id: str):
     return []
 
 def onClickOnItem(id: str):
+    global current_code, origin_code, active_id
     for h in global_state.config_histories:
         if h.id == id:
+            active_id = h.id
+            current_code = h.info_text
+            origin_code = h.info_text
             img_path = os.path.join(config_dir, f"{h.id}.jpg")
             if os.path.isfile(img_path):
                 img = Image.open(img_path)
-                return img, h.info_text
+                return img, h.info_text, gr.update(visible=True)
 
 def history_table():
     if global_state.config_changed or not global_state.cached_data:
