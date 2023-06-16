@@ -2,7 +2,13 @@ from lib_history.history import History
 from typing import List, Callable
 import gradio as gr
 
+# config
 is_enabled: bool = True
+automatic_save: bool = True
+save_thumbnail: bool = True
+
+
+# data
 history_path: str = ""
 config_histories: List[History] = list()
 config_changed: bool = False

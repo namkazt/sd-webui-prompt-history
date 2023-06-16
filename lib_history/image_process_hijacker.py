@@ -1,8 +1,6 @@
 from lib_history import hijacker, global_state
 from modules import script_callbacks, processing, shared
-import modules.images as images
 import uuid
-import os
 
 process_images_inner_hijacker = hijacker.ModuleHijacker.install_or_get(
     module=processing,
@@ -23,11 +21,7 @@ def process_images(p: processing.StableDiffusionProcessing, original_function):
     res = original_function(p)
     shared.opts.return_grid = old_state
 
-    # save image preview with h.id name
-    img_id = uuid.uuid4().hex
-    img = res.images[0]
-    images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{img_id}.jpg"))
     # add result to history
-    global_state.add_config(img_id, res.prompt[:64], shared.opts.sd_model_checkpoint, res.infotexts[0])
+    global_state.add_config( uuid.uuid4().hex, res.prompt[:64], shared.opts.sd_model_checkpoint, res.infotexts[0], res.images[0])
     return res
 

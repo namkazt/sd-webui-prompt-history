@@ -6,6 +6,7 @@ importlib.reload(hijacker)
 importlib.reload(history)
 importlib.reload(image_process_hijacker)
 
+import modules.images as images
 import modules.generation_parameters_copypaste as parameters_copypaste
 from PIL import Image
 import time
@@ -13,7 +14,6 @@ import html
 import gradio as gr
 import json
 import os
-import modules
 from modules import script_callbacks, shared, scripts, ui_components
 
 config_dir = os.path.join(scripts.basedir(), "data")
@@ -21,6 +21,7 @@ config_file_path = "data.json"
 current_code = ""
 origin_code = "'"
 active_id = ""
+manual_save_history = None
 
 def read_config():
     # ensure history exist
@@ -48,9 +49,28 @@ def save_history():
     with open(cfgPath, "w", encoding="utf-8") as outfile:
         outfile.write(to_json())
 
-def add_config(id: str, name: str, model: str, info_text: str) -> history.History:
+def add_config(id: str, name: str, model: str, info_text: str, img) -> history.History:
     # init new history
     h = history.History(id, name, model, info_text)
+    
+    # in case of not automatic save, we must store few items in case of manual saved
+    if not global_state.automatic_save:
+        global manual_save_history
+        manual_save_history = {
+            "history": h,
+            "image": img,
+        }
+        return
+    
+    # save image
+    if global_state.save_thumbnail:
+        new_width  = 300
+        new_height = new_width * img.height / img.width 
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+        images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{id}.jpg"))
+    else:
+        images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{id}.jpg"))
+        
     # add history to list
     global_state.config_histories.insert(0, h)
     
@@ -61,8 +81,36 @@ def add_config(id: str, name: str, model: str, info_text: str) -> history.Histor
     global_state.config_changed = True
     return h
     
+def manually_save():
+    global manual_save_history
+    if manual_save_history is not None:
+        img = manual_save_history["image"]
+        h = manual_save_history["history"]
+        # save image
+        if global_state.save_thumbnail:
+            new_width  = 300
+            new_height = int(new_width * img.height / img.width)
+            img = img.resize((new_width, new_height), Image.LANCZOS)
+            images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{h.id}.jpg"))
+        else:
+            images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{h.id}.jpg"))
+            
+        # add history to list
+        global_state.config_histories.insert(0, h)
+        
+        # save to file
+        save_history()
+        
+        # reload the UI
+        global_state.config_changed = True
+        
+        # clean 
+        manual_save_history = None
+    
 def before_ui():
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
+    global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
+    global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
     global_state.history_path = config_dir
     global_state.add_config = add_config
     read_config()
@@ -70,10 +118,12 @@ def before_ui():
 def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as ui:
         with gr.Row():
+            save_last_prompt_btn = gr.Button("Save Last Generated Info", visible=not global_state.automatic_save)
+        with gr.Row():
             with gr.Column(scale=1): 
                 # list display column
                 table = gr.HTML('Loading...')
-                ui.load(fn=history_table, inputs=[], outputs=[table], every=1)
+                ui.load(fn=history_table, inputs=[], outputs=[table, save_last_prompt_btn], every=1)
                 # receiver buttons
                 item_id_text = gr.Text(elem_id="prompt_history_item_id_text", visible=False)
                 click_item_btn = gr.Button(elem_id="prompt_history_click_item_btn", visible=False)
@@ -98,7 +148,11 @@ def on_ui_tabs():
                         show_label=True,
                         interactive=False,
                     )
-                    
+        # manual save last generated info
+        save_last_prompt_btn.click(
+            fn=manually_save,
+        )
+        
         # process when click edit button
         edit_btn.click(
             fn=lambda: {
@@ -199,7 +253,12 @@ def onClickOnItem(id: str):
                 return img, h.info_text, gr.update(visible=True)
 
 def history_table():
+    global manual_save_history
+    # update config variables
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
+    global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
+    global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
+    
     if global_state.config_changed or not global_state.cached_data:
         code = f"""
         <div class="g-table-body">
@@ -235,11 +294,13 @@ def history_table():
         """
         global_state.cached_data = code
         global_state.config_changed = False
-    return global_state.cached_data
+    return global_state.cached_data, gr.update(visible=(not global_state.automatic_save and manual_save_history is not None))
 
 def on_ui_settings():
     section = ('prompt_history', 'Prompt History')
     shared.opts.add_option('prompt_history_enabled', shared.OptionInfo(True, 'Enabled', section=section))
+    shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in txt2img screen for save info manually)', section=section))
+    shared.opts.add_option('prompt_history_save_thumbnail', shared.OptionInfo(True, 'Save Thumbnail (Save thumbnail instead of full image)', section=section))
 
 
 script_callbacks.on_ui_settings(on_ui_settings)
