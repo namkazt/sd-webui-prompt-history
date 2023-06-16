@@ -299,7 +299,7 @@ def history_table():
 def on_ui_settings():
     section = ('prompt_history', 'Prompt History')
     shared.opts.add_option('prompt_history_enabled', shared.OptionInfo(True, 'Enabled', section=section))
-    shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in txt2img screen for save info manually)', section=section))
+    shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in Prompt History screen for save info manually)', section=section))
     shared.opts.add_option('prompt_history_save_thumbnail', shared.OptionInfo(True, 'Save Thumbnail (Save thumbnail instead of full image)', section=section))
 
 
