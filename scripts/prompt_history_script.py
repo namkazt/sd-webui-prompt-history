@@ -65,7 +65,7 @@ def add_config(id: str, name: str, model: str, info_text: str, img) -> history.H
     # save image
     if global_state.save_thumbnail:
         new_width  = 300
-        new_height = new_width * img.height / img.width 
+        new_height = int(new_width * img.height / img.width)
         img = img.resize((new_width, new_height), Image.LANCZOS)
         images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{id}.jpg"))
     else:
