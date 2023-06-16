@@ -199,6 +199,7 @@ def onClickOnItem(id: str):
                 return img, h.info_text, gr.update(visible=True)
 
 def history_table():
+    global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     if global_state.config_changed or not global_state.cached_data:
         code = f"""
         <div class="g-table-body">
