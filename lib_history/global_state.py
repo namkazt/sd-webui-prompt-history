@@ -6,7 +6,7 @@ import gradio as gr
 is_enabled: bool = True
 automatic_save: bool = True
 save_thumbnail: bool = True
-
+items_per_page: int = 15
 
 # data
 history_path: str = ""

@@ -20,3 +20,13 @@
 .pmt_item_active {
     background: #c31e1e3b;
 }
+
+.g-table-list-pagination-col a {
+    padding: 10px;
+}
+
+.g-table-list-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

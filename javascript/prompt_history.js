@@ -15,6 +15,14 @@ function promptHistoryItemDelete(id) {
     gradioApp().querySelector('#prompt_history_delete_item_btn').click();
 }
 
+function promptHistoryPrev() {
+    gradioApp().querySelector('#prompt_history_prev_btn').click();
+}
+
+function promptHistoryNext() {
+    gradioApp().querySelector('#prompt_history_next_btn').click();
+}
+
 function promptHistoryAutoRefresh() {
     const ll = setInterval(() => {
         const generating = gradioApp().querySelector('#tab_extension_prompt_history_tab .generating');

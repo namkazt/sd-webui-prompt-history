@@ -1,4 +1,5 @@
 from cProfile import label
+import math
 from lib_history import global_state, history, hijacker, image_process_hijacker
 import importlib
 importlib.reload(global_state)
@@ -133,6 +134,8 @@ def on_ui_tabs():
                 item_id_text = gr.Text(elem_id="prompt_history_item_id_text", visible=False)
                 click_item_btn = gr.Button(elem_id="prompt_history_click_item_btn", visible=False)
                 delete_item_btn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
+                prev_btn = gr.Button(elem_id="prompt_history_prev_btn", visible=False)
+                next_btn = gr.Button(elem_id="prompt_history_next_btn", visible=False)
             with gr.Column(scale=1): # image preview and details column
                 with gr.Row():
                     # image preview
@@ -167,6 +170,26 @@ def on_ui_tabs():
                 edit_btn: gr.update(visible=False),
             },
             outputs=[code_block, revert_btn, save_btn, edit_btn]
+        )
+        
+        def prev_func():
+            global current_page
+            if global_state.config_changed: return
+            global_state.config_changed = True
+            current_page -= 1
+            if current_page <= 0: current_page = 1
+        prev_btn.click(
+            fn=prev_func,
+        )
+        
+        def next_func():
+            global current_page
+            if global_state.config_changed: return
+            global_state.config_changed = True
+            current_page += 1
+            if current_page > total_pages: current_page = total_pages
+        next_btn.click(
+            fn=next_func,
         )
         
         # revert code func
@@ -259,7 +282,7 @@ def on_click_item(id: str):
                 return img, h.info_text, gr.update(visible=True)
 
 def history_table():
-    global manual_save_history
+    global manual_save_history, total_pages, current_page
     # update config variables
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
@@ -268,6 +291,7 @@ def history_table():
     active_class = "pmt_item_active"
     
     if global_state.config_changed or not global_state.cached_data:
+        
         code = f"""
         <div class="g-table-body">
         <table cellspacing="0" class="g-table-list">
@@ -281,25 +305,40 @@ def history_table():
             <tbody>
         """
         
-        for h in global_state.config_histories:
+        # calculate pagination
+        total_items = len(global_state.config_histories)
+        total_pages = math.floor(total_items / global_state.items_per_page)
+        if total_pages * global_state.items_per_page < total_items:
+            total_pages += 1
+        if current_page <= 0: current_page = 1
+        if current_page > total_pages: current_page = total_pages
+        start_idx = (current_page - 1) * global_state.items_per_page
+        end_idx = start_idx + global_state.items_per_page
+        if end_idx > total_items: end_idx = total_items
+        
+        # render page
+        for h in global_state.config_histories[start_idx:end_idx]:
             item_class = ""
             if h.id == active_id:
                 item_class = active_class
-            onclickViewItem =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
-            onclickDeleteItem =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
+            on_click_view_item_fn =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
+            on_click_delete_item_fn =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
+            on_click_prev_fn =  '"' + html.escape(f"""return promptHistoryPrev()""") + '"'
+            on_click_next_fn =  '"' + html.escape(f"""return promptHistoryNext()""") + '"'
             code += f"""<tr class="{item_class}">
-                        <td style="cursor: pointer;" onclick={onclickViewItem} style="width: 90%;">{h.name} - {h.model}</td>
-                        <td style="cursor: pointer;" onclick={onclickViewItem}>{time.ctime(h.created_at)}</td>
-                        <td style="width: 110px;"><a onclick={onclickDeleteItem} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
+                        <td style="cursor: pointer;" onclick={on_click_view_item_fn} style="width: 90%;">{h.name} - {h.model}</td>
+                        <td style="cursor: pointer;" onclick={on_click_view_item_fn}>{time.ctime(h.created_at)}</td>
+                        <td style="width: 110px;"><a onclick={on_click_delete_item_fn} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
                     </tr>"""
 
-        code += """
+        code += f"""
             </tbody>
         </table>
         <div class="g-table-list-pagination">
             <div class="g-table-list-pagination-col">
-                <a href="#" class="g-actions-button g-actions-button-pager">◀️ Prev</a>
-                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager">Next ▶️</a>
+                <a href="#" class="g-actions-button g-actions-button-pager" onclick={on_click_prev_fn}>◀️ Prev</a>
+                <a href="#">{current_page}/{total_pages}</a>
+                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager" onclick={on_click_next_fn}>Next ▶️</a>
             </div>
         </div>
         """
