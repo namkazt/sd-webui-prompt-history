@@ -1,5 +1,5 @@
 # NOTE:
-This is a extensions for https://github.com/AUTOMATIC1111/stable-diffusion-webui
+This is an extension for https://github.com/AUTOMATIC1111/stable-diffusion-webui
 
 # sd-webui-prompt-history
 Automatic store your generation info with image and apply back anytime.
