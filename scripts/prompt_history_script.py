@@ -22,6 +22,11 @@ current_code = ""
 origin_code = "'"
 active_id = ""
 manual_save_history = None
+# pagination
+total_pages = 1
+current_page = 1
+
+
 
 def read_config():
     # ensure history exist
@@ -215,7 +220,7 @@ def on_ui_tabs():
         
         # process when click to item
         click_item_btn.click(
-            fn=onClickOnItem,
+            fn=on_click_item,
             inputs=[item_id_text],
             outputs=[preview_image, code_block, edit_btn],
             show_progress=False,
@@ -223,13 +228,13 @@ def on_ui_tabs():
         
         # process when delete button
         delete_item_btn.click(
-            fn=onDeleteItem,
+            fn=on_delete_item,
             inputs=[item_id_text],
             show_progress=False,
         )
         return [(ui, "Prompt History", "extension_prompt_history_tab")]
 
-def onDeleteItem(id: str):
+def on_delete_item(id: str):
     for h in global_state.config_histories:
         if h.id == id:
             img_path = os.path.join(config_dir, f"{h.id}.jpg")
@@ -240,7 +245,7 @@ def onDeleteItem(id: str):
     global_state.config_changed = True
     return []
 
-def onClickOnItem(id: str):
+def on_click_item(id: str):
     global current_code, origin_code, active_id
     for h in global_state.config_histories:
         if h.id == id:
@@ -248,6 +253,7 @@ def onClickOnItem(id: str):
             current_code = h.info_text
             origin_code = h.info_text
             img_path = os.path.join(config_dir, f"{h.id}.jpg")
+            global_state.config_changed = True
             if os.path.isfile(img_path):
                 img = Image.open(img_path)
                 return img, h.info_text, gr.update(visible=True)
@@ -258,6 +264,8 @@ def history_table():
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
     global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
+    
+    active_class = "pmt_item_active"
     
     if global_state.config_changed or not global_state.cached_data:
         code = f"""
@@ -274,9 +282,12 @@ def history_table():
         """
         
         for h in global_state.config_histories:
+            item_class = ""
+            if h.id == active_id:
+                item_class = active_class
             onclickViewItem =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
             onclickDeleteItem =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
-            code += f"""<tr>
+            code += f"""<tr class="{item_class}">
                         <td style="cursor: pointer;" onclick={onclickViewItem} style="width: 90%;">{h.name} - {h.model}</td>
                         <td style="cursor: pointer;" onclick={onclickViewItem}>{time.ctime(h.created_at)}</td>
                         <td style="width: 110px;"><a onclick={onclickDeleteItem} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
@@ -287,8 +298,8 @@ def history_table():
         </table>
         <div class="g-table-list-pagination">
             <div class="g-table-list-pagination-col">
-                <a href="#" class="g-actions-button g-actions-button-pager"><i class="fa fa-fw fa-caret-left right-4"></i>Prev</a>
-                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager">Next<i class="fa fa-fw fa-caret-right left-4"></i></a>
+                <a href="#" class="g-actions-button g-actions-button-pager">◀️ Prev</a>
+                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager">Next ▶️</a>
             </div>
         </div>
         """
