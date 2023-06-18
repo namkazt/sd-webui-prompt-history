@@ -124,7 +124,7 @@ def before_ui():
 def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as ui:
         with gr.Row():
-            save_last_prompt_btn = gr.Button("Save Last Generated Info", visible=not global_state.automatic_save)
+            save_last_prompt_btn = gr.Button("Save Last Generated Info", elem_id="prompt_history_save_btn", visible=not global_state.automatic_save)
         with gr.Row():
             with gr.Column(scale=1): 
                 # list display column
