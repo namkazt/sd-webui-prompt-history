@@ -323,14 +323,14 @@ def history_table():
                 item_class = active_class
             on_click_view_item_fn =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
             on_click_delete_item_fn =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
-            on_click_prev_fn =  '"' + html.escape(f"""return promptHistoryPrev()""") + '"'
-            on_click_next_fn =  '"' + html.escape(f"""return promptHistoryNext()""") + '"'
             code += f"""<tr class="{item_class}">
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn} style="width: 90%;">{h.name} - {h.model}</td>
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn}>{time.ctime(h.created_at)}</td>
                         <td style="width: 110px;"><a onclick={on_click_delete_item_fn} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
                     </tr>"""
 
+        on_click_prev_fn =  '"' + html.escape(f"""return promptHistoryPrev()""") + '"'
+        on_click_next_fn =  '"' + html.escape(f"""return promptHistoryNext()""") + '"'
         code += f"""
             </tbody>
         </table>
