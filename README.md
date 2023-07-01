@@ -7,8 +7,8 @@ Automatic store your generation info with image and apply back anytime.
 ## Features
 - 🌟 Based on https://github.com/namkazt/sd-webui-prompt-history
 - 🆒 Bulk deletion
-- 🔥 Displays the image of every prompt
-- 💖 Fix size of the preview image 🆕
+- 🔥 Displays the image of every prompt, easy to preview, apply or delete
+- 💖 Fix size of the preview image
 - 🛶 Adapt to page layout, below 2k resolution (perfect in 4k)
 
 ![Screenshot_2023-07-01_160159](https://github.com/12343954/sd-webui-prompt-history/assets/1804003/9823ff17-8487-4020-a6b9-9aaade8ff8ec)
