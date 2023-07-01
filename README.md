@@ -4,6 +4,13 @@ This is an extension for https://github.com/AUTOMATIC1111/stable-diffusion-webui
 # sd-webui-prompt-history
 Automatic store your generation info with image and apply back anytime.
 
+## Advanced features
+- 🌟 Based on https://github.com/namkazt/sd-webui-prompt-history
+- 🆒 Bulk deletion
+- 💖 Fix size of the preview image 🆕
+- 🛶 Adapt to page layout, below 2k resolution
+
+
 ![image](https://github.com/namkazt/sd-webui-prompt-history/assets/6035916/6ae9f707-ae9c-4d8e-9b42-2968e26de549)
 
 # Options
