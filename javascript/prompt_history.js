@@ -41,8 +41,35 @@ class ClassWatcher {
     }
 }
 
+function promptHistorySelect(td) {
+    let checkbox = td.querySelector("input[type=checkbox]")
+    checkbox.checked = !checkbox.checked
+    return false;
+}
+
+
+function promptHistorySelectAll(checkbox) {
+    gradioApp().querySelectorAll("#prompt-history-table tbody input[type=checkbox]").forEach(p => p.checked = checkbox.checked)
+}
+
+function promptHistoryMultiselectDelete() {
+    let checkboxes = gradioApp().querySelectorAll("#prompt-history-table tbody input:checked")
+    if (checkboxes.length == 0) {
+        return false;
+    }
+
+    checkboxes.forEach(p => {
+        p.parentNode?.parentNode?.remove();
+    })
+
+    let textarea = gradioApp().querySelector('#prompt_history_item_id_text textarea');
+    textarea.value = Array.from(checkboxes).map(p => p.value).join(',');
+    updateInput(textarea);
+    gradioApp().querySelector('#prompt_history_delete_item_btn').click();
+}
+
 function promptHistoryItemClick(id) {
-    var textarea = gradioApp().querySelector('#prompt_history_item_id_text textarea');
+    let textarea = gradioApp().querySelector('#prompt_history_item_id_text textarea');
     textarea.value = id;
     updateInput(textarea);
 
@@ -50,7 +77,7 @@ function promptHistoryItemClick(id) {
 }
 
 function promptHistoryItemDelete(id) {
-    var textarea = gradioApp().querySelector('#prompt_history_item_id_text textarea');
+    let textarea = gradioApp().querySelector('#prompt_history_item_id_text textarea');
     textarea.value = id;
     updateInput(textarea);
 

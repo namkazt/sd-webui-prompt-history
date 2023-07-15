@@ -262,12 +262,13 @@ def on_ui_tabs():
         return [(ui, "Prompt History", "extension_prompt_history_tab")]
 
 def on_delete_item(id: str):
-    for h in global_state.config_histories:
-        if h.id == id:
-            img_path = os.path.join(config_dir, f"{h.id}.jpg")
-            if os.path.isfile(img_path):
-                os.remove(img_path)
-            global_state.config_histories.remove(h)
+    for _id in id.split(','):
+        for h in global_state.config_histories:
+            if h.id == _id:
+                img_path = os.path.join(config_dir, f"{h.id}.jpg")
+                if os.path.isfile(img_path):
+                    os.remove(img_path)
+                global_state.config_histories.remove(h)
     save_history()
     global_state.config_changed = True
     return []
@@ -305,9 +306,13 @@ def history_table():
         
         code = f"""
         <div class="g-table-body">
+        <button class="lg secondary gradio-button" onclick="return promptHistoryMultiselectDelete()"  style="padding: 0 10px;" id="prompt_history_btn_delete_selected">❌ Delete Selected</button>
         <table cellspacing="0" class="g-table-list" id="prompt-history-table">
             <thead>
                 <tr>
+                    <th style="cursor: pointer;width: 80px;display: flex;flex-direction: row;">
+                        <input type="checkbox"onclick="return promptHistorySelectAll(this)"  style="cursor:pointer;outline:1px solid #dadada;" />
+                    </th>
                     <th class="g-table-list-col-title g-table-list-col-sku required ">Name</th>
                     <th class="g-table-list-col-title g-table-list-col-sku required ">Preview</th>
                     <th class="g-table-list-col-title g-table-list-col-listing opt g-table-list-rwd">Created At</th>
@@ -336,8 +341,11 @@ def history_table():
             on_click_view_item_fn =  '"' + html.escape(f"""return promptHistoryItemClick('{h.id}')""") + '"'
             on_click_delete_item_fn =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
             code += f"""<tr class="{item_class}">
+                        <td style="cursor: pointer;vertical-align:top;" onclick="return promptHistorySelect(this)">
+                            <input type="checkbox" value="{h.id}" style="pointer-events: none;cursor:pointer;outline:1px solid #dadada;" />
+                        </td>
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn} style="width: 90%;">{h.name} - {h.model}</td>
-                         <td style="cursor: pointer;vertical-align:top;" onclick={on_click_view_item_fn}>
+                        <td style="cursor: pointer;vertical-align:top;" onclick={on_click_view_item_fn}>
                             <img src="/file={config_dir}{os.sep}{h.id}.jpg" style="max-width:{global_state.table_thumb_size}px;max-height:{global_state.table_thumb_size}px;">
                         </td>
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn}>{time.ctime(h.created_at)}</td>
