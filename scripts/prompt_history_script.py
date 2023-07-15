@@ -73,9 +73,9 @@ def add_config(id: str, name: str, model: str, info_text: str, img) -> history.H
         new_width  = 300
         new_height = int(new_width * img.height / img.width)
         img = img.resize((new_width, new_height), Image.LANCZOS)
-        images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{id}.jpg"))
+        images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
     else:
-        images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{id}.jpg"))
+        images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
         
     # add history to list
     global_state.config_histories.insert(0, h)
@@ -97,9 +97,9 @@ def manually_save():
             new_width  = 300
             new_height = int(new_width * img.height / img.width)
             img = img.resize((new_width, new_height), Image.LANCZOS)
-            images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{h.id}.jpg"))
+            images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
         else:
-            images.save_image_with_geninfo(img, None, os.path.join(global_state.history_path, f"{h.id}.jpg"))
+            images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
             
         # add history to list
         global_state.config_histories.insert(0, h)
