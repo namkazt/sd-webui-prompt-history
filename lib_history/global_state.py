@@ -7,6 +7,7 @@ is_enabled: bool = True
 automatic_save: bool = True
 save_thumbnail: bool = True
 items_per_page: int = 15
+table_thumb_size: int = 136
 
 # data
 history_path: str = ""

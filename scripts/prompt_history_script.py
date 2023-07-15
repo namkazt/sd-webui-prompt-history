@@ -1,5 +1,7 @@
 from cProfile import label
 import math
+
+from sympy import true
 from lib_history import global_state, history, hijacker, image_process_hijacker
 import importlib
 importlib.reload(global_state)
@@ -117,6 +119,8 @@ def before_ui():
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
     global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
+    global_state.table_thumb_size = int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96))
+    global_state.items_per_page = int(shared.opts.data.get('prompt_history_items_per_page', 15))
     global_state.history_path = config_dir
     global_state.add_config = add_config
     read_config()
@@ -126,7 +130,7 @@ def on_ui_tabs():
         with gr.Row():
             save_last_prompt_btn = gr.Button("Save Last Generated Info", elem_id="prompt_history_save_btn", visible=not global_state.automatic_save)
         with gr.Row():
-            with gr.Column(scale=1): 
+            with gr.Column(scale=7): 
                 # list display column
                 table = gr.HTML('Loading...')
                 ui.load(fn=history_table, inputs=[], outputs=[table, save_last_prompt_btn], every=1)
@@ -136,14 +140,14 @@ def on_ui_tabs():
                 delete_item_btn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
                 prev_btn = gr.Button(elem_id="prompt_history_prev_btn", visible=False)
                 next_btn = gr.Button(elem_id="prompt_history_next_btn", visible=False)
-            with gr.Column(scale=1): # image preview and details column
+            with gr.Column(scale=3): # image preview and details column
                 with gr.Row():
                     # image preview
                     preview_image = gr.Image(
                         label="Preview",
                         show_label=True,
                         interactive=False,
-                    )
+                    ).style(width=300)
                 with gr.Row():
                     apply_btn = gr.Button("Apply")
                 with gr.Row():
@@ -281,12 +285,19 @@ def on_click_item(id: str):
                 img = Image.open(img_path)
                 return img, h.info_text, gr.update(visible=True)
 
+def config_changed(orginal_cfg:None, new_cfg:None):
+    if orginal_cfg != new_cfg:
+        global_state.config_changed = True
+    return new_cfg
+    
 def history_table():
     global manual_save_history, total_pages, current_page
     # update config variables
-    global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
-    global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
-    global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
+    global_state.is_enabled = config_changed(global_state.is_enabled, shared.opts.data.get('prompt_history_enabled', True))
+    global_state.automatic_save = config_changed(global_state.automatic_save, shared.opts.data.get('prompt_history_automatic_save_info', True))
+    global_state.save_thumbnail = config_changed(global_state.save_thumbnail, shared.opts.data.get('prompt_history_save_thumbnail', True))
+    global_state.table_thumb_size = config_changed(global_state.table_thumb_size, int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96)))
+    global_state.items_per_page = config_changed(global_state.items_per_page, int(shared.opts.data.get('prompt_history_items_per_page', 15)))
     
     active_class = "pmt_item_active"
     
@@ -294,10 +305,11 @@ def history_table():
         
         code = f"""
         <div class="g-table-body">
-        <table cellspacing="0" class="g-table-list">
+        <table cellspacing="0" class="g-table-list" id="prompt-history-table">
             <thead>
                 <tr>
                     <th class="g-table-list-col-title g-table-list-col-sku required ">Name</th>
+                    <th class="g-table-list-col-title g-table-list-col-sku required ">Preview</th>
                     <th class="g-table-list-col-title g-table-list-col-listing opt g-table-list-rwd">Created At</th>
                     <th class="g-table-list-col-title g-table-list-col-date required">Actions</th>
                 </tr>
@@ -325,6 +337,9 @@ def history_table():
             on_click_delete_item_fn =  '"' + html.escape(f"""return promptHistoryItemDelete('{h.id}')""") + '"'
             code += f"""<tr class="{item_class}">
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn} style="width: 90%;">{h.name} - {h.model}</td>
+                         <td style="cursor: pointer;vertical-align:top;" onclick={on_click_view_item_fn}>
+                            <img src="/file={config_dir}{os.sep}{h.id}.jpg" style="max-width:{global_state.table_thumb_size}px;max-height:{global_state.table_thumb_size}px;">
+                        </td>
                         <td style="cursor: pointer;" onclick={on_click_view_item_fn}>{time.ctime(h.created_at)}</td>
                         <td style="width: 110px;"><a onclick={on_click_delete_item_fn} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
                     </tr>"""
@@ -349,6 +364,8 @@ def history_table():
 def on_ui_settings():
     section = ('prompt_history', 'Prompt History')
     shared.opts.add_option('prompt_history_enabled', shared.OptionInfo(True, 'Enabled', section=section))
+    shared.opts.add_option("prompt_history_preview_thumb_size_inline", shared.OptionInfo(96, "Preview thumbnail size in table", gr.Number, section=section))
+    shared.opts.add_option("prompt_history_items_per_page", shared.OptionInfo(15, "Number of history items display per page", gr.Number, section=section))
     shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in Prompt History screen for save info manually)', section=section))
     shared.opts.add_option('prompt_history_save_thumbnail', shared.OptionInfo(True, 'Save Thumbnail (Save thumbnail instead of full image)', section=section))
 
