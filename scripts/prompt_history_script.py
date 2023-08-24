@@ -95,12 +95,12 @@ def manually_save():
         img = manual_save_history["image"]
         h = manual_save_history["history"]
         # save image
-        if global_state.save_thumbnail:
+        if global_state.save_thumbnail == "thumbnail":
             new_width  = 300
             new_height = int(new_width * img.height / img.width)
             img = img.resize((new_width, new_height), Image.LANCZOS)
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
-        else:
+        elif global_state.save_thumbnail == "full":
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
             
         # add history to list
