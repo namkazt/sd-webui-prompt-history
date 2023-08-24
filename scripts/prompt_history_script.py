@@ -71,12 +71,12 @@ def add_config(id: str, name: str, model: str, info_text: str, img) -> history.H
         return
     
     # save image
-    if global_state.save_thumbnail:
+    if global_state.save_thumbnail == "thumbnail":
         new_width  = 300
         new_height = int(new_width * img.height / img.width)
         img = img.resize((new_width, new_height), Image.LANCZOS)
         images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
-    else:
+    elif global_state.save_thumbnail == "full":
         images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
         
     # add history to list
@@ -118,7 +118,7 @@ def manually_save():
 def before_ui():
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
-    global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', True)
+    global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', "full")
     global_state.table_thumb_size = int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96))
     global_state.items_per_page = int(shared.opts.data.get('prompt_history_items_per_page', 15))
     global_state.history_path = config_dir
@@ -282,9 +282,8 @@ def on_click_item(id: str):
             origin_code = h.info_text
             img_path = os.path.join(config_dir, f"{h.id}.jpg")
             global_state.config_changed = True
-            if os.path.isfile(img_path):
-                img = Image.open(img_path)
-                return img, h.info_text, gr.update(visible=True)
+            img = Image.open(img_path) if os.path.isfile(img_path) else None
+            return img, h.info_text, gr.update(visible=True)
 
 def config_changed(orginal_cfg:None, new_cfg:None):
     if orginal_cfg != new_cfg:
@@ -296,7 +295,7 @@ def history_table():
     # update config variables
     global_state.is_enabled = config_changed(global_state.is_enabled, shared.opts.data.get('prompt_history_enabled', True))
     global_state.automatic_save = config_changed(global_state.automatic_save, shared.opts.data.get('prompt_history_automatic_save_info', True))
-    global_state.save_thumbnail = config_changed(global_state.save_thumbnail, shared.opts.data.get('prompt_history_save_thumbnail', True))
+    global_state.save_thumbnail = config_changed(global_state.save_thumbnail, shared.opts.data.get('prompt_history_save_thumbnail', "full"))
     global_state.table_thumb_size = config_changed(global_state.table_thumb_size, int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96)))
     global_state.items_per_page = config_changed(global_state.items_per_page, int(shared.opts.data.get('prompt_history_items_per_page', 15)))
     
@@ -375,7 +374,7 @@ def on_ui_settings():
     shared.opts.add_option("prompt_history_preview_thumb_size_inline", shared.OptionInfo(96, "Preview thumbnail size in table", gr.Number, section=section))
     shared.opts.add_option("prompt_history_items_per_page", shared.OptionInfo(15, "Number of history items display per page", gr.Number, section=section))
     shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in Prompt History screen for save info manually)', section=section))
-    shared.opts.add_option('prompt_history_save_thumbnail', shared.OptionInfo(True, 'Save Thumbnail (Save thumbnail instead of full image)', section=section))
+    shared.opts.add_option('prompt_history_save_thumbnail', shared.OptionInfo(None, "Save Thumbnail", gr.Dropdown, lambda: {"choices": ["none", "thumbnail", "full"]}, section=section))
 
 
 script_callbacks.on_ui_settings(on_ui_settings)
