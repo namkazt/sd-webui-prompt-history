@@ -98,7 +98,7 @@ function promptHistorySave() {
 
 function promptHistoryAutoRefresh() {
     // hijack ui
-    const btn_c = gradioApp().querySelector('#txt2img_style_create')
+    const btn_c = gradioApp().querySelector('#txt2img_styles_edit_button')
     const pinit = gradioApp().querySelector('#txt2img_gallery_container');
     const pdiv = pinit.parentNode;
     if (pdiv !== undefined) {
