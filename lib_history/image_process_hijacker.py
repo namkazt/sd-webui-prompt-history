@@ -22,6 +22,6 @@ def process_images(p: processing.StableDiffusionProcessing, original_function):
     shared.opts.return_grid = old_state
 
     # add result to history
-    global_state.add_config( uuid.uuid4().hex, res.prompt[:64], shared.opts.sd_model_checkpoint, res.infotexts[0], res.images[0])
+    global_state.add_config( uuid.uuid4().hex, res.prompt, shared.opts.sd_model_checkpoint, res.infotexts[0], res.images[0])
     return res
 

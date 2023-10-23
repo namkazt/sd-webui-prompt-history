@@ -61,6 +61,14 @@ def add_config(id: str, name: str, model: str, info_text: str, img) -> history.H
     # init new history
     h = history.History(id, name, model, info_text)
     
+    # shorten name
+    original_prompt = h.name
+    h.name = h.name[:64]
+    # replace default prompts
+    info_texts = info_text.splitlines(True) 
+    info_texts[0] = original_prompt + '\n'
+    h.info_text = ''.join(info_texts)
+    
     # in case of not automatic save, we must store few items in case of manual saved
     if not global_state.automatic_save:
         global manual_save_history
@@ -100,7 +108,7 @@ def manually_save():
             new_height = int(new_width * img.height / img.width)
             img = img.resize((new_width, new_height), Image.LANCZOS)
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
-        elif global_state.save_thumbnail == "full":
+        else:
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
             
         # add history to list
