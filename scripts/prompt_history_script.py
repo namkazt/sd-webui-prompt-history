@@ -155,7 +155,8 @@ def on_ui_tabs():
                         label="Preview",
                         show_label=True,
                         interactive=False,
-                    ).style(width=300)
+                        width=300,
+                    )
                 with gr.Row():
                     apply_btn = gr.Button("Apply")
                 with gr.Row():
