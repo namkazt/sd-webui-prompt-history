@@ -396,7 +396,7 @@ def history_table():
 def on_ui_settings():
     section = ('prompt_history', 'Prompt History')
     shared.opts.add_option('prompt_history_enabled', shared.OptionInfo(True, 'Enabled', section=section))
-    shared.opts.add_option('prompt_history_data_path', shared.OptionInfo(os.path.join(scripts.basedir(), "data"), 'Data Storage Path', section=section))
+    shared.opts.add_option('prompt_history_data_path', shared.OptionInfo(config_dir, 'Data Storage Path', section=section))
     shared.opts.add_option("prompt_history_preview_thumb_size_inline", shared.OptionInfo(96, "Preview thumbnail size in table", gr.Number, section=section))
     shared.opts.add_option("prompt_history_items_per_page", shared.OptionInfo(15, "Number of history items display per page", gr.Number, section=section))
     shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in Prompt History screen for save info manually)', section=section))
