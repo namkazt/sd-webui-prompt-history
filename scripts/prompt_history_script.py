@@ -79,12 +79,14 @@ def add_config(id: str, name: str, model: str, info_text: str, img) -> history.H
         return
     
     # save image
-    if global_state.save_thumbnail == "thumbnail":
+    imageType = global_state.save_thumbnail
+    if imageType == "": imageType = "full"
+    if imageType == "thumbnail":
         new_width  = 300
         new_height = int(new_width * img.height / img.width)
         img = img.resize((new_width, new_height), Image.LANCZOS)
         images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
-    elif global_state.save_thumbnail == "full":
+    elif imageType == "full":
         images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{id}", extension="jpg", save_to_dirs=False)
         
     # add history to list
@@ -103,12 +105,14 @@ def manually_save():
         img = manual_save_history["image"]
         h = manual_save_history["history"]
         # save image
-        if global_state.save_thumbnail == "thumbnail":
+        imageType = global_state.save_thumbnail
+        if imageType == "": imageType = "full"
+        if imageType == "thumbnail":
             new_width  = 300
             new_height = int(new_width * img.height / img.width)
             img = img.resize((new_width, new_height), Image.LANCZOS)
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
-        else:
+        elif imageType == "full":
             images.save_image(image=img, path=global_state.history_path, basename="", forced_filename=f"{h.id}", extension="jpg", save_to_dirs=False)
             
         # add history to list
@@ -124,12 +128,18 @@ def manually_save():
         manual_save_history = None
     
 def before_ui():
+    global config_dir
     global_state.is_enabled = shared.opts.data.get('prompt_history_enabled', True)
     global_state.automatic_save = shared.opts.data.get('prompt_history_automatic_save_info', True)
     global_state.save_thumbnail = shared.opts.data.get('prompt_history_save_thumbnail', "full")
     global_state.table_thumb_size = int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96))
     global_state.items_per_page = int(shared.opts.data.get('prompt_history_items_per_page', 15))
-    global_state.history_path = config_dir
+    setup_data_dir = shared.opts.data.get('prompt_history_data_path', config_dir) 
+    if setup_data_dir != "":
+        config_dir = setup_data_dir
+        global_state.history_path = setup_data_dir
+    else:
+        global_state.history_path = setup_data_dir
     global_state.add_config = add_config
     read_config()
 
@@ -300,13 +310,19 @@ def config_changed(orginal_cfg:None, new_cfg:None):
     return new_cfg
     
 def history_table():
-    global manual_save_history, total_pages, current_page
+    global manual_save_history, total_pages, current_page, config_dir
     # update config variables
     global_state.is_enabled = config_changed(global_state.is_enabled, shared.opts.data.get('prompt_history_enabled', True))
     global_state.automatic_save = config_changed(global_state.automatic_save, shared.opts.data.get('prompt_history_automatic_save_info', True))
     global_state.save_thumbnail = config_changed(global_state.save_thumbnail, shared.opts.data.get('prompt_history_save_thumbnail', "full"))
     global_state.table_thumb_size = config_changed(global_state.table_thumb_size, int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96)))
     global_state.items_per_page = config_changed(global_state.items_per_page, int(shared.opts.data.get('prompt_history_items_per_page', 15)))
+    setup_data_dir = config_changed(shared.opts.data.get('prompt_history_data_path', config_dir))
+    if setup_data_dir != "":
+        config_dir = setup_data_dir
+        global_state.history_path = setup_data_dir
+    else:
+        global_state.history_path = setup_data_dir
     
     active_class = "pmt_item_active"
     
@@ -380,6 +396,7 @@ def history_table():
 def on_ui_settings():
     section = ('prompt_history', 'Prompt History')
     shared.opts.add_option('prompt_history_enabled', shared.OptionInfo(True, 'Enabled', section=section))
+    shared.opts.add_option('prompt_history_data_path', shared.OptionInfo(os.path.join(scripts.basedir(), "data"), 'Data Storage Path', section=section))
     shared.opts.add_option("prompt_history_preview_thumb_size_inline", shared.OptionInfo(96, "Preview thumbnail size in table", gr.Number, section=section))
     shared.opts.add_option("prompt_history_items_per_page", shared.OptionInfo(15, "Number of history items display per page", gr.Number, section=section))
     shared.opts.add_option('prompt_history_automatic_save_info', shared.OptionInfo(True, 'Automatic Save (If unset, a button will be display in Prompt History screen for save info manually)', section=section))
