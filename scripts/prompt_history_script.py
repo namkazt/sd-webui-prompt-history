@@ -158,6 +158,8 @@ def on_ui_tabs():
                 delete_item_btn = gr.Button(elem_id="prompt_history_delete_item_btn", visible=False)
                 prev_btn = gr.Button(elem_id="prompt_history_prev_btn", visible=False)
                 next_btn = gr.Button(elem_id="prompt_history_next_btn", visible=False)
+                select_page_text = gr.Text(elem_id="prompt_history_select_page_text", visible=False)
+                select_page_btn = gr.Button(elem_id="prompt_history_select_page_btn", visible=False)
             with gr.Column(scale=3): # image preview and details column
                 with gr.Row():
                     # image preview
@@ -203,6 +205,22 @@ def on_ui_tabs():
             if current_page <= 0: current_page = 1
         prev_btn.click(
             fn=prev_func,
+        )
+        
+        def select_page_func(page: str):
+            total_items = len(global_state.config_histories)
+            total_pages = math.floor(total_items / global_state.items_per_page)
+            if total_pages * global_state.items_per_page < total_items:
+                total_pages += 1
+            input_page = int(page, 10)
+            if input_page > 0 & input_page <= total_pages:
+                global current_page
+                if global_state.config_changed: return
+                global_state.config_changed = True
+                current_page = input_page
+        select_page_btn.click(
+            fn=select_page_func,
+            inputs=[select_page_text],
         )
         
         def next_func():
@@ -317,8 +335,9 @@ def history_table():
     global_state.save_thumbnail = config_changed(global_state.save_thumbnail, shared.opts.data.get('prompt_history_save_thumbnail', "full"))
     global_state.table_thumb_size = config_changed(global_state.table_thumb_size, int(shared.opts.data.get('prompt_history_preview_thumb_size_inline', 96)))
     global_state.items_per_page = config_changed(global_state.items_per_page, int(shared.opts.data.get('prompt_history_items_per_page', 15)))
-    setup_data_dir = config_changed(shared.opts.data.get('prompt_history_data_path', config_dir))
-    if setup_data_dir != "":
+    setup_data_dir = config_changed(config_dir, shared.opts.data.get('prompt_history_data_path', config_dir))
+    if setup_data_dir != "" and setup_data_dir != config_dir:
+        global_state.config_histories = list()
         config_dir = setup_data_dir
         global_state.history_path = setup_data_dir
     else:
@@ -376,16 +395,31 @@ def history_table():
                         <td style="width: 110px;"><a onclick={on_click_delete_item_fn} class="g-actions-button g-actions-button-pager">🗑️ Delete</a></td>
                     </tr>"""
 
-        on_click_prev_fn =  '"' + html.escape(f"""return promptHistoryPrev()""") + '"'
-        on_click_next_fn =  '"' + html.escape(f"""return promptHistoryNext()""") + '"'
+        # <a href="#">{current_page}/{total_pages}</a>
         code += f"""
             </tbody>
         </table>
         <div class="g-table-list-pagination">
             <div class="g-table-list-pagination-col">
-                <a href="#" class="g-actions-button g-actions-button-pager" onclick={on_click_prev_fn}>◀️ Prev</a>
-                <a href="#">{current_page}/{total_pages}</a>
-                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager" onclick={on_click_next_fn}>Next ▶️</a>
+                <a href="#" class="g-actions-button g-actions-button-pager" onclick="return promptHistoryPrev()">◀️</a>
+        """
+        if total_pages <= 6:
+            for i in range(1, total_pages + 1):
+                code += f"""<a href="#" class="g-actions-button g-actions-button-pager" onclick="return promptHistorySelectPage({i})">{i}</a>"""
+        else:
+            if current_page - 3 > 1:
+                code += f"""<a href="#">...</a>"""
+            for i in range(current_page - 3, current_page):
+                if i > 0:
+                    code += f"""<a href="#" class="g-actions-button g-actions-button-pager" onclick="return promptHistorySelectPage({i})">{i}</a>"""
+            code += f"""<input id="page_input" value="{current_page}" data-testid="number-input" type="number" min="1" max="{total_pages}" step="1"  onchange="promptHistoryPageInputOnChange()">""" 
+            for i in range(current_page + 1, current_page + 4):
+                if i <= total_pages:
+                    code += f"""<a href="#" class="g-actions-button g-actions-button-pager" onclick="return promptHistorySelectPage({i})">{i}</a>"""
+            if current_page < total_pages:
+                code += f"""<a href="#">...</a>"""
+        code += """
+                <a href="#" class="g-actions-button g-actions-button-pager g-table-list-pager" onclick="return promptHistoryNext()">▶️</a>
             </div>
         </div>
         """

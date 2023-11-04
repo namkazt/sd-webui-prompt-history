@@ -30,3 +30,9 @@
     justify-content: center;
     align-items: center;
 }
+
+.g-pager {
+    border: solid 1px gray;
+    padding: 3px;
+    border-radius: 4px;
+}

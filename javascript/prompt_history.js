@@ -84,6 +84,20 @@ function promptHistoryItemDelete(id) {
     gradioApp().querySelector('#prompt_history_delete_item_btn').click();
 }
 
+
+function promptHistorySelectPage(page) {
+    let textarea = gradioApp().querySelector('#prompt_history_select_page_text textarea');
+    textarea.value = page;
+    updateInput(textarea);
+
+    gradioApp().querySelector('#prompt_history_select_page_btn').click();
+}
+
+function promptHistoryPageInputOnChange() {
+  var x = gradioApp().querySelector('#page_input').value;
+  promptHistorySelectPage(x)
+}
+
 function promptHistoryPrev() {
     gradioApp().querySelector('#prompt_history_prev_btn').click();
 }
